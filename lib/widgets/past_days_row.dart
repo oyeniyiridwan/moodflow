@@ -1,10 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:moodflow/providers/mood_provider.dart';
 import '../models/mood.dart';
 import 'mood_face_painter.dart';
 import '../theme.dart';
 
-class PastDaysRow extends StatelessWidget {
+class PastDaysRow extends ConsumerWidget {
   const PastDaysRow({super.key});
 
   String _getWeekdayString(int weekday) {
@@ -20,19 +22,19 @@ class PastDaysRow extends StatelessWidget {
     return months[month - 1];
   }
 
+  String _key(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final moods = ref.watch(moodProvider); // 👈 SOURCE OF TRUTH
+
     final today = DateTime.now();
 
-    final pastMoods = [
-      Mood.happy,
-      Mood.excited,
-      Mood.sad,
-      Mood.neutral,
-      Mood.excited,
-      Mood.happy,
-      Mood.neutral,
-    ];
+    final last7Days = List.generate(7, (i) {
+      return DateTime(today.year, today.month, today.day)
+          .subtract(Duration(days: i + 1));
+    }).reversed.toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,12 +56,20 @@ class PastDaysRow extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: List.generate(7, (index) {
-                    final date = today.subtract(Duration(days: index));
-                    final isToday = index == 0;
+                    final date = last7Days[index];
 
-                    final dayStr = isToday
-                        ? 'TODAY'
-                        : _getWeekdayString(date.weekday);
+                    final mood = moods.firstWhere(
+                      (m) =>
+                          m.date.year == date.year &&
+                          m.date.month == date.month &&
+                          m.date.day == date.day,
+                      orElse: () => DailyMood(
+                        date: date,
+                        mood: Mood.neutral,
+                      ),
+                    );
+
+                    final dayStr = _getWeekdayString(date.weekday);
 
                     final dateStr =
                         '${_getMonthString(date.month)} ${date.day}';
@@ -67,8 +77,8 @@ class PastDaysRow extends StatelessWidget {
                     return _DayCard(
                       day: dayStr,
                       date: dateStr,
-                      mood: pastMoods[index],
-                      isToday: isToday,
+                      mood: mood.mood,
+                      isToday: false,
                       width: cardWidth,
                     );
                   }),
@@ -81,7 +91,6 @@ class PastDaysRow extends StatelessWidget {
     );
   }
 }
-
 class _DayCard extends StatefulWidget {
   final String day;
   final String date;

@@ -1,22 +1,30 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:moodflow/providers/mood_provider.dart';
 import '../models/mood.dart';
 import 'mood_face_painter.dart';
 import '../theme.dart';
-
-class MoodSelector extends StatelessWidget {
-  final Mood selectedMood;
-  final ValueChanged<Mood> onMoodSelected;
-
-  const MoodSelector({
-    super.key,
-    required this.selectedMood,
-    required this.onMoodSelected,
-  });
+class MoodSelector extends ConsumerWidget {
+  const MoodSelector({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final moods = ref.watch(moodProvider);
+    final today = DateTime.now();
+
+    final todayMood = moods.firstWhere(
+      (m) =>
+          m.date.year == today.year &&
+          m.date.month == today.month &&
+          m.date.day == today.day,
+      orElse: () => DailyMood(
+        date: today,
+        mood: Mood.neutral,
+      ),
+    ).mood;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final cardWidth = constraints.maxWidth * 0.14;
@@ -24,11 +32,14 @@ class MoodSelector extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: Mood.values.map((mood) {
-            final isSelected = mood == selectedMood;
+            final isSelected = mood == todayMood;
+
             return MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
-                onTap: () => onMoodSelected(mood),
+                onTap: () {
+                  ref.read(moodProvider.notifier).setMood(mood);
+                },
                 child: _MoodCard(
                   mood: mood,
                   isSelected: isSelected,
@@ -42,7 +53,6 @@ class MoodSelector extends StatelessWidget {
     );
   }
 }
-
 class _MoodCard extends StatelessWidget {
   final Mood mood;
   final bool isSelected;

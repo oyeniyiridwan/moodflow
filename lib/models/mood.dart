@@ -17,3 +17,14 @@ extension MoodExtension on Mood {
     }
   }
 }
+
+
+class DailyMood {
+  final DateTime date;
+  final Mood mood;
+
+  DailyMood({
+    required this.date,
+    required this.mood,
+  });
+}
