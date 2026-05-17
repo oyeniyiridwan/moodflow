@@ -13,6 +13,9 @@ class MoodFlowApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scrollBehavior: MaterialScrollBehavior().copyWith(
+    scrollbars: false,
+  ),
       title: 'MoodFlow',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
